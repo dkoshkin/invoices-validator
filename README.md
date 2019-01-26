@@ -1,0 +1,27 @@
+# Invoice Validator
+
+## Using It
+
+Set secrets:
+
+```
+export DROPBOX_TOKEN=''
+export SENDGRID_API_KEY=''
+```
+
+Modify `hack/env/vars.env` and run:
+
+```
+source hack/env/vars.env
+./bin/invoices-validator-darwin-amd64 -v 2 -logtostderr=true
+```
+
+## Development
+
+```
+make test
+# build a docker container
+make build-container
+# or build a binary to bin/
+make build-binary
+```

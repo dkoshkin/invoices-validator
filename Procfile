@@ -1,0 +1,1 @@
+cron: ./bin/cmd -v 2 -logtostderr=true

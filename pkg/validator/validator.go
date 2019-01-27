@@ -1,20 +1,26 @@
 package validator
 
+type ValidationError struct {
+	Actual         string
+	Expected       string
+	AdditionalInfo string
+}
+
 type validatable interface {
-	Validate() (bool, []error)
+	Validate() (bool, []ValidationError)
 }
 
 type Validator struct {
-	errs []error
+	errs []ValidationError
 }
 
 func NewValidator() *Validator {
 	return &Validator{
-		errs: []error{},
+		errs: []ValidationError{},
 	}
 }
 
-func (v *Validator) AddError(err ...error) {
+func (v *Validator) AddError(err ...ValidationError) {
 	v.errs = append(v.errs, err...)
 }
 
@@ -24,7 +30,7 @@ func (v *Validator) Validate(obj validatable) {
 	}
 }
 
-func (v *Validator) Valid() (bool, []error) {
+func (v *Validator) Valid() (bool, []ValidationError) {
 	if len(v.errs) > 0 {
 		return false, v.errs
 	}

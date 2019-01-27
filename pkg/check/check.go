@@ -20,7 +20,7 @@ const (
 	folderNameExpected = "First Last, ie John Doe"
 
 	fileNameRegex    = `^(0[1-9]|1[0-2])(0[1-9]|1\d|2\d|3[01])(201)\d{1}-\d{2}\.docx$`
-	fileNameExpected = "ddmmyyyy-##.docx, ie 01312019-01.docx"
+	fileNameExpected = "Something like \"01312019-01.docx\""
 )
 
 type Checker interface {
@@ -89,12 +89,17 @@ type nameValidator struct {
 	additionalInfo string
 }
 
-func (nv nameValidator) Validate() (bool, []error) {
+func (nv nameValidator) Validate() (bool, []validator.ValidationError) {
 	v := validator.NewValidator()
 
 	match, _ := regexp.MatchString(nv.regex, nv.name)
 	if !match {
-		v.AddError(fmt.Errorf("Name %q did not match expected %q. %s", nv.name, nv.expected, nv.additionalInfo))
+		err := validator.ValidationError{
+			Actual:         fmt.Sprintf("%q", nv.name),
+			Expected:       nv.expected,
+			AdditionalInfo: nv.additionalInfo,
+		}
+		v.AddError(err)
 	}
 
 	return v.Valid()

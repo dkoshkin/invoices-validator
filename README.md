@@ -7,6 +7,8 @@ Set secrets:
 ```
 export DROPBOX_TOKEN=''
 export SENDGRID_API_KEY=''
+export TWILIO_ACCOUNT_SID=''
+export TWILIO_API_KEY=''
 ```
 
 Modify `hack/env/vars.env` and run:

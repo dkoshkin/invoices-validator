@@ -17,17 +17,13 @@ import (
 )
 
 const (
-	dropboxTokenEnv   = "DROPBOX_TOKEN"
-	dropboxPathEnv    = "DROPBOX_PATH"
-	sendgridAPIKeyEnv = "SENDGRID_API_KEY"
-	emailMapEnv       = "NAME_EMAIL_PAIRS"
+	dropboxTokenEnv = "DROPBOX_TOKEN"
+	dropboxPathEnv  = "DROPBOX_PATH"
 
 	foldersToIgnoreEnv = "FOLDERS_TO_IGNORE"
 	filesToIgnoreEnv   = "FILES_TO_IGNORE"
 
-	senderName  = "Invoice Validator Bot"
-	senderEmail = "dimitri.koshkin@gmail.com"
-	subject     = "Failed Invoice Validations"
+	notifierSubject = "Failed Invoice Validations"
 )
 
 // Set via linker flag
@@ -47,16 +43,18 @@ func main() {
 	// validate env vars are set
 	dropboxToken := os.Getenv(dropboxTokenEnv)
 	dropboxPath := os.Getenv(dropboxPathEnv)
-	sendgridAPIKey := os.Getenv(sendgridAPIKeyEnv)
-	notifierContactsRaw := os.Getenv(emailMapEnv)
+
 	for env, val := range map[string]string{
-		dropboxTokenEnv:   dropboxToken,
-		dropboxPathEnv:    dropboxPath,
-		sendgridAPIKeyEnv: sendgridAPIKey,
-		emailMapEnv:       notifierContactsRaw} {
+		dropboxTokenEnv: dropboxToken,
+		dropboxPathEnv:  dropboxPath} {
 		if val == "" {
 			log.Fatalf("%s variable must be set", env)
 		}
+	}
+
+	notifiers := notifier.ConfiguredNotifiers()
+	if len(notifiers) == 0 {
+		log.Fatalf("no notifiers were configured")
 	}
 
 	// print some passed in env vars
@@ -132,35 +130,17 @@ func main() {
 
 	valid, errs := v.Valid()
 	if !valid {
-		log.Infof("Found %d errors, will send notification", len(errs))
-		ntfr := notifier.SendGridNotifier{
-			APIKey:      sendgridAPIKey,
-			SenderName:  senderName,
-			SenderEmail: senderEmail,
-			Subject:     subject,
-		}
+		log.Infof("Found %d errors, will send notification(s)", len(errs))
 
-		content, err := ntfr.FormatContent(errs)
-		if err != nil {
-			log.Fatalf("could not send notification: %v", err)
-		}
-
-		// split "name1=email1:name2=email2" to a slice of notifier.Contact
-		contactsRaw := strings.Split(notifierContactsRaw, ":")
-		contacts := make([]notifier.Contact, 0, len(contactsRaw))
-
-		funk.ForEach(contactsRaw, func(contact string) {
-			split := strings.Split(contact, "=")
-			if len(split) != 2 {
-				log.Fatalf("invalid name=email pair: %q", contact)
+		for _, n := range notifiers {
+			content, err := n.FormatContent(errs)
+			if err != nil {
+				log.Fatalf("could not format content: %v", err)
 			}
-			c := notifier.Contact{split[0], split[1]}
-			contacts = append(contacts, c)
-		})
-
-		err = ntfr.Send(contacts, content)
-		if err != nil {
-			log.Fatalf("could not send notification: %v", err)
+			err = n.Send(notifierSubject, content)
+			if err != nil {
+				log.Fatalf("could not send notification: %v", err)
+			}
 		}
 	}
 }

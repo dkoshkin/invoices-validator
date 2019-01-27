@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/dkoshkin/invoices-validator/pkg/check"
 	"github.com/dkoshkin/invoices-validator/pkg/notifier"
+	"github.com/dkoshkin/invoices-validator/pkg/stringsx"
 	"github.com/dkoshkin/invoices-validator/pkg/validator"
 	"os"
 	"strings"
@@ -52,20 +53,20 @@ func main() {
 		}
 	}
 
-	notifiers := notifier.ConfiguredNotifiers()
-	if len(notifiers) == 0 {
-		log.Fatalf("no notifiers were configured")
+	notifiers, err := notifier.ConfiguredNotifiers()
+	if err != nil {
+		log.Fatalf("could not configure notifiers: %v", err)
 	}
 
 	// print some passed in env vars
 	log.Infof("Using path: %q", dropboxPath)
-	foldersToIgnore := strings.Split(os.Getenv(foldersToIgnoreEnv), ":")
+	foldersToIgnore := stringsx.Split(os.Getenv(foldersToIgnoreEnv), ":")
 	foldersToIgnoreLower := make([]string, 0, len(foldersToIgnore))
 	funk.ForEach(foldersToIgnore, func(x string) {
 		foldersToIgnoreLower = append(foldersToIgnoreLower, strings.ToLower(x))
 	})
-	log.Infof("Ignoring folders: %+v", foldersToIgnoreLower)
-	filesToIgnore := strings.Split(os.Getenv(filesToIgnoreEnv), ":")
+	log.Infof("Ignoring folders: %+v", foldersToIgnore)
+	filesToIgnore := stringsx.Split(os.Getenv(filesToIgnoreEnv), ":")
 	log.Infof("Ignoring file: %+v", filesToIgnore)
 
 	// setup Dropbox client
@@ -135,11 +136,12 @@ func main() {
 		for _, n := range notifiers {
 			content, err := n.FormatContent(errs)
 			if err != nil {
-				log.Fatalf("could not format content: %v", err)
-			}
-			err = n.Send(notifierSubject, content)
-			if err != nil {
-				log.Fatalf("could not send notification: %v", err)
+				log.Errorf("could not format content: %v", err)
+			} else {
+				err = n.Send(notifierSubject, content)
+				if err != nil {
+					log.Errorf("could not send notification: %v", err)
+				}
 			}
 		}
 	}

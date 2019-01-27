@@ -17,14 +17,13 @@ const (
 )
 
 type twilioNotifier struct {
-	initialized  bool
 	client       *gotwilio.Twilio
 	senderNumber string
 
 	contacts func() []Contact
 }
 
-func NewSMSNotifier() Notifier {
+func NewSMSNotifier() (Notifier, error) {
 	log.Info("Initializing SMS notifier...")
 	notifier := &twilioNotifier{}
 
@@ -38,22 +37,16 @@ func NewSMSNotifier() Notifier {
 		twillioSenderPhoneNumberEnv: twillioSenderPhoneNumber,
 	} {
 		if val == "" {
-			log.Warningf("%s variable must be set", env)
-			return notifier
+			return nil, fmt.Errorf("%s variable must be set", env)
 		}
 	}
 
-	notifier.initialized = true
 	notifier.client = gotwilio.NewTwilioClient(twilioAccountSID, twilioAPIKey)
 	notifier.senderNumber = twillioSenderPhoneNumber
 	notifier.contacts = defaultSMSContactGetter
 	log.Info("SMS notifier initialized successfully")
 
-	return notifier
-}
-
-func (n twilioNotifier) Initialized() bool {
-	return n.initialized
+	return notifier, nil
 }
 
 func (n *twilioNotifier) SetContactsGetter(f func() []Contact) {

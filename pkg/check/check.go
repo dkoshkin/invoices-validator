@@ -2,6 +2,7 @@ package check
 
 import (
 	"fmt"
+	"github.com/dkoshkin/invoices-validator/pkg/stringsx"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -36,7 +37,7 @@ func (c *FolderCheck) Check(validator *validator.Validator) {
 	name := c.Folder.Name
 
 	// skip processing certain folders
-	folders := strings.Split(filepath.Dir(c.Folder.PathLower), string(filepath.Separator))
+	folders := stringsx.Split(filepath.Dir(c.Folder.PathLower), string(filepath.Separator))
 	if len(funk.IntersectString(c.FoldersToIgnore, folders)) > 0 || funk.ContainsString(c.FoldersToIgnore, strings.ToLower(name)) {
 		log.V(3).Infof("Ignoring Folder %q", name)
 		return
@@ -63,7 +64,7 @@ func (c *FileCheck) Check(validator *validator.Validator) {
 	name := c.File.Name
 
 	// skip processing certain files and files in skipped folders
-	folders := strings.Split(filepath.Dir(c.File.PathLower), string(filepath.Separator))
+	folders := stringsx.Split(filepath.Dir(c.File.PathLower), string(filepath.Separator))
 
 	// if any parent Folder is in FOLDERS_TO_IGNORE OR File in FILES_TO_IGNORE, skip
 	if len(funk.IntersectString(c.FoldersToIgnore, folders)) > 0 || funk.ContainsString(c.FilesToIgnore, name) {

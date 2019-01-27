@@ -19,7 +19,6 @@ const (
 )
 
 type sendGridNotifier struct {
-	initialized bool
 	client      *sendgrid.Client
 
 	senderName  string
@@ -28,7 +27,7 @@ type sendGridNotifier struct {
 	contacts func() []Contact
 }
 
-func NewEmailNotifier() Notifier {
+func NewEmailNotifier() (Notifier, error) {
 	log.Info("Initializing Email notifier...")
 	notifier := &sendGridNotifier{}
 
@@ -42,23 +41,17 @@ func NewEmailNotifier() Notifier {
 		notifierSenderEmailEnv: notifierSenderEmail,
 	} {
 		if val == "" {
-			log.Warningf("%s variable must be set", env)
-			return notifier
+			return nil, fmt.Errorf("%s variable must be set", env)
 		}
 	}
 
-	notifier.initialized = true
 	notifier.client = sendgrid.NewSendClient(sendgridAPIKey)
 	notifier.senderName = notifierSenderName
 	notifier.senderEmail = notifierSenderEmail
 	notifier.contacts = defaultEmailContactsGetter
 	log.Info("Email notifier initialized successfully")
 
-	return notifier
-}
-
-func (n sendGridNotifier) Initialized() bool {
-	return n.initialized
+	return notifier, nil
 }
 
 func (n *sendGridNotifier) SetContactsGetter(f func() []Contact) {

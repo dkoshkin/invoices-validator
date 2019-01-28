@@ -20,8 +20,8 @@ const (
 	folderNameRegex    = "^[^,]*$"
 	folderNameExpected = "First Last, ie John Doe"
 
-	fileNameRegex    = `^(0[1-9]|1[0-2])(0[1-9]|1\d|2\d|3[01])(201)\d{1}-\d{2}\.docx$`
-	fileNameExpected = "Something like \"01312019-01.docx\""
+	fileNameRegex    = `^(0[1-9]|1[0-2])(0[1-9]|1\d|2\d|3[01])(1|2)\d{1}-\d{2}\.docx$`
+	fileNameExpected = "Something like \"013119-01.docx\""
 )
 
 type Checker interface {

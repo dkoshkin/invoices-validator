@@ -1,20 +1,19 @@
-package main
+package controller
 
 import (
-	"flag"
+	"fmt"
 	"github.com/dkoshkin/invoices-validator/pkg/check"
 	"github.com/dkoshkin/invoices-validator/pkg/notifier"
 	"github.com/dkoshkin/invoices-validator/pkg/stringsx"
 	"github.com/dkoshkin/invoices-validator/pkg/validator"
-	"os"
-	"strings"
-
-	"github.com/thoas/go-funk"
-
 	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox"
 	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox/files"
+	log "github.com/sirupsen/logrus"
+	"github.com/thoas/go-funk"
+	"time"
 
-	log "k8s.io/klog"
+	"os"
+	"strings"
 )
 
 const (
@@ -24,23 +23,10 @@ const (
 	foldersToIgnoreEnv = "FOLDERS_TO_IGNORE"
 	filesToIgnoreEnv   = "FILES_TO_IGNORE"
 
-	notifierSubject = "Failed Invoice Validations"
+	notifierSubjectBase = "Failed Invoice Validations"
 )
 
-// Set via linker flag
-var (
-	version   string
-	buildDate string
-)
-
-func main() {
-	// setup logging
-	log.InitFlags(nil)
-	flag.Parse()
-
-	log.Infof("Version: %q", version)
-	log.Infof("Build Date: %q", buildDate)
-
+func Run() error {
 	// validate env vars are set
 	dropboxToken := os.Getenv(dropboxTokenEnv)
 	dropboxPath := os.Getenv(dropboxPathEnv)
@@ -49,13 +35,13 @@ func main() {
 		dropboxTokenEnv: dropboxToken,
 		dropboxPathEnv:  dropboxPath} {
 		if val == "" {
-			log.Fatalf("%s variable must be set", env)
+			return fmt.Errorf("%s variable must be set", env)
 		}
 	}
 
 	notifiers, err := notifier.ConfiguredNotifiers()
 	if err != nil {
-		log.Fatalf("could not configure notifiers: %v", err)
+		return fmt.Errorf("could not configure notifiers: %v", err)
 	}
 
 	// print some passed in env vars
@@ -105,7 +91,7 @@ func main() {
 			}
 			cursor = res.Cursor
 		}
-		log.V(2).Infof("Found %d files/folders in the directory", len(res.Entries))
+		log.Debugf("Found %d files/folders in the directory", len(res.Entries))
 		hasMore = res.HasMore
 		for _, metadata := range res.Entries {
 			switch metadata.(type) {
@@ -131,13 +117,14 @@ func main() {
 
 	valid, errs := v.Valid()
 	if !valid {
-		log.Infof("Found %d errors, will send notification(s)", len(errs))
+		log.Infof("Found %d errors", len(errs))
 
 		for _, n := range notifiers {
 			content, err := n.FormatContent(errs)
 			if err != nil {
 				log.Errorf("could not format content: %v", err)
 			} else {
+				notifierSubject := fmt.Sprintf("%s - %s", notifierSubjectBase, time.Now().Format("01022006"))
 				err = n.Send(notifierSubject, content)
 				if err != nil {
 					log.Errorf("could not send notification: %v", err)
@@ -145,4 +132,6 @@ func main() {
 			}
 		}
 	}
+
+	return nil
 }

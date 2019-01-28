@@ -12,7 +12,7 @@ import (
 	"github.com/dkoshkin/invoices-validator/pkg/validator"
 	"github.com/dropbox/dropbox-sdk-go-unofficial/dropbox/files"
 
-	log "k8s.io/klog"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -39,11 +39,11 @@ func (c *FolderCheck) Check(validator *validator.Validator) {
 	// skip processing certain folders
 	folders := stringsx.Split(filepath.Dir(c.Folder.PathLower), string(filepath.Separator))
 	if len(funk.IntersectString(c.FoldersToIgnore, folders)) > 0 || funk.ContainsString(c.FoldersToIgnore, strings.ToLower(name)) {
-		log.V(3).Infof("Ignoring Folder %q", name)
+		log.Debug("Ignoring Folder %q", name)
 		return
 	}
 
-	log.V(2).Infof("Found Folder: %q", name)
+	log.Debug("Found Folder: %q", name)
 
 	check := nameValidator{
 		name:           name,
@@ -68,11 +68,11 @@ func (c *FileCheck) Check(validator *validator.Validator) {
 
 	// if any parent Folder is in FOLDERS_TO_IGNORE OR File in FILES_TO_IGNORE, skip
 	if len(funk.IntersectString(c.FoldersToIgnore, folders)) > 0 || funk.ContainsString(c.FilesToIgnore, name) {
-		log.V(3).Infof("Ignoring File %q", c.File.PathDisplay)
+		log.Debug("Ignoring File %q", c.File.PathDisplay)
 		return
 	}
 
-	log.V(2).Infof("Found File: %q", c.File.PathDisplay)
+	log.Debug("Found File: %q", c.File.PathDisplay)
 
 	check := nameValidator{
 		name:           name,

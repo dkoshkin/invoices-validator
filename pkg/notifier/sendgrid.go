@@ -7,8 +7,8 @@ import (
 	"github.com/dkoshkin/invoices-validator/pkg/validator"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	log "github.com/sirupsen/logrus"
 	"html/template"
-	log "k8s.io/klog"
 	"os"
 )
 
@@ -19,7 +19,7 @@ const (
 )
 
 type sendGridNotifier struct {
-	client      *sendgrid.Client
+	client *sendgrid.Client
 
 	senderName  string
 	senderEmail string
@@ -82,10 +82,13 @@ func (n sendGridNotifier) Send(subject string, content string) error {
 		Personalizations: []*mail.Personalization{personalization},
 	}
 
+	log.Debugf("Email Request:\n%s", spew.Sdump(message))
+
 	// send email
 	resp, err := n.client.Send(message)
-	log.V(3).Infof("Email Response:\n%s", spew.Sdump(resp))
-
+	if resp != nil {
+		log.Debugf("Email Response:\n%s", spew.Sdump(resp))
+	}
 	if err != nil {
 		return fmt.Errorf("error sending email: %v", err)
 	}

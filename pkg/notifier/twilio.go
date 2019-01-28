@@ -5,14 +5,14 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dkoshkin/invoices-validator/pkg/validator"
 	"github.com/sfreiberg/gotwilio"
-	log "k8s.io/klog"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"strings"
 )
 
 const (
-	twilioAPIKeyEnv        = "TWILIO_API_KEY"
-	twilioAccountSIDEnv    = "TWILIO_ACCOUNT_SID"
+	twilioAPIKeyEnv             = "TWILIO_API_KEY"
+	twilioAccountSIDEnv         = "TWILIO_ACCOUNT_SID"
 	twillioSenderPhoneNumberEnv = "NOTIFIER_SENDER_PHONE_NUMBER"
 )
 
@@ -32,8 +32,8 @@ func NewSMSNotifier() (Notifier, error) {
 	twillioSenderPhoneNumber := os.Getenv(twillioSenderPhoneNumberEnv)
 
 	for env, val := range map[string]string{
-		twilioAPIKeyEnv:        twilioAPIKey,
-		twilioAccountSIDEnv:    twilioAccountSID,
+		twilioAPIKeyEnv:             twilioAPIKey,
+		twilioAccountSIDEnv:         twilioAccountSID,
 		twillioSenderPhoneNumberEnv: twillioSenderPhoneNumber,
 	} {
 		if val == "" {
@@ -62,9 +62,13 @@ func (n twilioNotifier) Send(subject string, content string) error {
 
 	for _, contact := range contacts {
 		resp, exception, err := n.client.SendSMS(n.senderNumber, contact.Address, content, "", "")
-		log.V(3).Infof("SMS Response:\n%s", spew.Sdump(resp))
-		log.V(3).Infof("SMS Exception:\n%s", spew.Sdump(exception))
-
+		if resp != nil {
+			log.Debugf("SMS Response:\n%s", spew.Sdump(resp))
+		}
+		if exception != nil {
+			log.Errorf("SMS Exception:\n%s", spew.Sdump(exception))
+			return fmt.Errorf("exception sending SMS")
+		}
 		if err != nil {
 			return fmt.Errorf("error sending SMS: %v", err)
 		}

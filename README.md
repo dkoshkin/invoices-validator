@@ -15,7 +15,7 @@ Modify `hack/env/vars.env` and run:
 
 ```
 source hack/env/vars.env
-./bin/invoices-validator-darwin-amd64 -v 2 -logtostderr=true
+./bin/invoices-validator-darwin-amd64 -log-level=debug
 ```
 
 ## Development

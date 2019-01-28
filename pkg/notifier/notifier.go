@@ -4,20 +4,20 @@ import (
 	"fmt"
 	"github.com/dkoshkin/invoices-validator/pkg/stringsx"
 	"github.com/dkoshkin/invoices-validator/pkg/validator"
+	log "github.com/sirupsen/logrus"
 	"github.com/thoas/go-funk"
-	log "k8s.io/klog"
 	"os"
 )
 
 const (
 	enabledNotifiersEnv = "ENABLED_NOTIFIERS"
 
-	notifierEmailMapEnv   = "NOTIFIER_NAME_EMAIL_PAIRS"
+	notifierEmailMapEnv = "NOTIFIER_NAME_EMAIL_PAIRS"
 
 	notifierSMSNumbersEnv = "NOTIFIER_SMS_PHONE_NUMBERS"
 
 	emailNotifier = "email"
-	smsNotifier = "sms"
+	smsNotifier   = "sms"
 )
 
 var defaultEmailContactsGetter = func() []Contact {
@@ -72,7 +72,7 @@ func ConfiguredNotifiers() ([]Notifier, error) {
 	enabledNotifiers := stringsx.Split(enabledNotifiersString, ":")
 
 	// get all initialized notifiers
-	for _, n := range enabledNotifiers{
+	for _, n := range enabledNotifiers {
 		switch n {
 		case emailNotifier:
 			if emailNotifier, err := NewEmailNotifier(); err != nil {
@@ -89,7 +89,7 @@ func ConfiguredNotifiers() ([]Notifier, error) {
 		}
 	}
 
-	if len(notifiers) == 0  {
+	if len(notifiers) == 0 {
 		return notifiers, fmt.Errorf("no notifiers were enabled")
 	}
 

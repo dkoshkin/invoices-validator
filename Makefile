@@ -13,6 +13,7 @@ endif
 
 CONTAINER = dkoshkin/invoices-validator
 PKG = github.com/dkoshkin/invoices-validator
+CMD ?= cli
 BUILDER_CHECKSUM = $$(shasum go.sum | awk '{ print $$1 }' | cut -c1-6)
 
 .PHONY: build-container
@@ -43,6 +44,7 @@ build-binary:
 		-e CGO_ENABLED=0                    \
 		-e GOOS=$(GOOS)                     \
 		-e GOARCH=$(GOARCH)                 \
+		-e CMD=$(CMD)                       \
 		-e VERSION=$(VERSION)               \
 		-e BUILD_DATE="$(BUILD_DATE)"       \
 		invoices-validator-base:$(BUILDER_CHECKSUM)  \
@@ -51,11 +53,25 @@ build-binary:
 .PHONY: build-binary-local
 build-binary-local:
 	go build \
-		-ldflags "-X main.version=$(VERSION) -X 'main.buildDate=$(BUILD_DATE)'" \
-		-o bin/invoices-validator-$(GOOS)-$(GOARCH) cmd/main.go
+		-a -ldflags "-X main.version=$(VERSION) -X 'main.buildDate=$(BUILD_DATE)'" \
+		-o bin/invoices-validator-$(CMD)-$(GOOS)-$(GOARCH) cmd/$(CMD)/main.go
 
 .PHONY: build-all
 build-all: build-container build-binaries
+
+.PHONY: lambda-zip
+lambda-zip:
+	rm -f bin/invoices-validator-handler.zip
+	@$(MAKE) GOOS=linux GOARCH=amd64 CMD=lambda build-binary
+	mv bin/invoices-validator-lambda-linux-amd64 bin/invoices-validator.handler
+	cd bin/ && zip invoices-validator-handler.zip invoices-validator.handler
+	rm -f bin/invoices-validator.handler
+
+.PHONY: lambda-publish
+lambda-publish: lambda-zip
+	aws lambda update-function-code \
+	--function-name invoices-validator \
+	--zip-file fileb://bin/invoices-validator-handler.zip
 
 .PHONY: test
 test:
